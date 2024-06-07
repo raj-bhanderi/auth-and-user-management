@@ -1,4 +1,4 @@
-const { sendResponse } = require("../helper");
+const { sendResponse, deleteImage } = require("../helper");
 const { STATUS_CODE } = require("../helper/enum");
 const { MESSAGE } = require("../helper/localization");
 const User = require("../models/user");
@@ -7,16 +7,14 @@ module.exports = {
   create: async (req, res) => {
     try {
       const user = await User.findOne({ email: req?.body?.email });
-
       if (user) {
         return sendResponse(
           res,
           STATUS_CODE?.CONFLICT,
           false,
-          MESSAGE?.USER_ALREADY_EXIT
+          MESSAGE?.ALREADY_EXIT("User")
         );
       }
-
       const create = new User(req?.body);
       const response = await create.save();
 
@@ -24,7 +22,7 @@ module.exports = {
         res,
         STATUS_CODE?.CREATED,
         true,
-        MESSAGE?.CREATE_USER,
+        MESSAGE?.CREATE("User"),
         response
       );
     } catch (error) {
@@ -34,12 +32,13 @@ module.exports = {
 
   findAll: async (req, res) => {
     try {
-      const users = await User.find({});
+      console.log(req?.role);
+      const users = await User.find({ role: req?.role });
       return sendResponse(
         res,
         STATUS_CODE?.OK,
         true,
-        MESSAGE?.GET_ALL_USER,
+        MESSAGE?.GET_ALL("User"),
         users
       );
     } catch (error) {
@@ -56,17 +55,11 @@ module.exports = {
           res,
           STATUS_CODE?.NOT_FOUND,
           false,
-          MESSAGE?.USER_NOT_FOUND
+          MESSAGE?.NOT_FOUND("User")
         );
       }
 
-      return sendResponse(
-        res,
-        STATUS_CODE?.OK,
-        true,
-        MESSAGE?.GET_ALL_USER,
-        user
-      );
+      return sendResponse(res, STATUS_CODE?.OK, true, MESSAGE?.GET_ALL, user);
     } catch (error) {
       return sendResponse(res, STATUS_CODE?.BAD_REQUEST, false, error?.message);
     }
@@ -81,17 +74,18 @@ module.exports = {
           res,
           STATUS_CODE?.NOT_FOUND,
           false,
-          MESSAGE?.USER_NOT_FOUND
+          MESSAGE?.NOT_FOUND("User")
         );
       }
-
+      await deleteImage(process.cwd() + "/public" + user?.profile_image)
+      
       const deleteUser = await User.deleteOne({ _id: req?.params?.id });
 
       return sendResponse(
         res,
         STATUS_CODE?.OK,
         true,
-        MESSAGE?.DELETE_USER,
+        MESSAGE?.DELETE("User"),
         deleteUser
       );
     } catch (error) {
@@ -108,17 +102,27 @@ module.exports = {
           res,
           STATUS_CODE?.NOT_FOUND,
           false,
-          MESSAGE?.USER_NOT_FOUND
+          MESSAGE?.NOT_FOUND("User")
         );
+      }
+
+      if(!req?.body?.profile_image){
+        await deleteImage(process.cwd() + "/public" + user?.profile_image)
       }
 
       const updateUser = await User.updateOne(
         { _id: req?.params?.id },
-        { $set: req?.body },
+        {
+          $set: {
+            ...req?.body,
+            profile_image:
+              req?.body?.profile_image || "/upload/user/" + req?.file?.filename,
+          },
+        },
         { upsert: true }
       );
 
-      return sendResponse(res, STATUS_CODE?.OK, true, MESSAGE?.UPDATE_USER, {
+      return sendResponse(res, STATUS_CODE?.OK, true, MESSAGE?.UPDATE("User"), {
         update: !!updateUser,
       });
     } catch (error) {
