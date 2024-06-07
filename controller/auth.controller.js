@@ -24,6 +24,7 @@ module.exports = {
         );
       }
 
+      
       const password = await hashPassword(req?.body?.password);
 
       const create = new User({
