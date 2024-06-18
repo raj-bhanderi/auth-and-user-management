@@ -19,7 +19,7 @@ A simple API for user sign-up and sign-in with full CRUD functionality using Mon
 
 1. Clone the repository
     ```sh
-    git clone https://github.com/your-username/auth-crud-service.git
+    git clone https://github.com/raj-bhanderi/auth-crud-service.git
     ```
 
 2. Navigate to the project directory
